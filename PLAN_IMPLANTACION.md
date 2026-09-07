@@ -61,9 +61,11 @@ Se justifica porque:
    - `docker compose up --build -d` → app en `http://localhost:5000`, BD en el contenedor `api-edu-postgres`, Adminer en `http://localhost:8081`.
    - Verificado: `GET /api/health` responde `{"status": "healthy"}`.
 3. **Implantación en la nube (Render)**
-   - Blueprint `render.yaml` conectado al repositorio de GitHub.
-   - Render crea: base PostgreSQL `api-edi-db` + web service `api-edi`.
-   - Variables de entorno inyectadas por Render (incluye `DATABASE_URL` desde la BD provista).
+   - Desplegado vía API de Render con la API key de la cuenta.
+   - Render creó: base PostgreSQL `api-edi-db` (plan free, oregon) + web service `api-edi` (runtime docker, plan free).
+   - App en **https://api-edi-iqx3.onrender.com** · BD en `dpg-dafgi4n40ujc73b71rfg-a.oregon-postgres.render.com:5432` (base `edi_db_yixs`, usuario `edi_db_yixs_user`).
+   - Variables de entorno inyectadas por Render: `DATABASE_URL` (de la BD provista) y `SECRET_KEY` (generada).
+   - Verificado end-to-end: `POST /api/proveedores` → 201 (registro insertado en la BD de Render).
 
 ## 6. Pruebas de aceptación
 
@@ -75,8 +77,9 @@ Se justifica porque:
 | 4 | Crear pedido EDI con detalles | Total calculado + descuento de stock | ✔ |
 | 5 | Número EDI duplicado | HTTP 409 | ✔ |
 | 6 | Suite pytest | 12/12 aprobadas | ✔ |
-| 7 | Health check en Render | 200 desde `https://<app>.onrender.com` | ✔ |
+| 7 | Health check en Render | 200 desde `https://api-edi-iqx3.onrender.com/api/health` | ✔ |
 | 8 | Ver BD (Adminer local y credenciales Render) | Consultar tablas creadas | ✔ |
+| 9 | Escribir en la BD de Render desde la API | `POST /api/proveedores` → 201 | ✔ (proveedor id=1 creado) |
 
 ## 7. Evidencias (capturas)
 
@@ -84,7 +87,7 @@ Se justifica porque:
 > 1. API funcionando en local — `http://localhost:5000/` (raíz con info) y `/api/health`.
 > 2. `docker compose ps` mostrando los tres contenedores (`app`, `postgres`, `adminer`) en estado *healthy/running*.
 > 3. Postman/Insomnia con una petición exitosa (ej. `POST /api/pedidos` 201).
-> 4. URL de Render respondiendo `GET /api/health` → 200.
+> 4. URL de Render respondiendo `GET /api/health` → 200 en https://api-edi-iqx3.onrender.com.
 
 ## 8. Mantenimiento y operaciones
 

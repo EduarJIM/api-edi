@@ -255,6 +255,17 @@ volumes:
 
 El repositorio incluye `render.yaml`, un *Blueprint* que crea automáticamente la **base de datos PostgreSQL** y el **servicio web**.
 
+### Estado actual del despliegue
+
+| Recurso | URL / detalle |
+|---|---|
+| App (API) | **https://api-edi-iqx3.onrender.com** |
+| Health check | https://api-edi-iqx3.onrender.com/api/health → `{"status": "healthy"}` |
+| BD PostgreSQL | `api-edi-db` (plan free, región oregon) → host `dpg-dafgi4n40ujc73b71rfg-a.oregon-postgres.render.com:5432`, base `edi_db_yixs`, usuario `edi_db_yixs_user` |
+| Paneles | App: https://dashboard.render.com/web/srv-dafgjvm1egvs73a2683g · BD: https://dashboard.render.com/d/dpg-dafgi4n40ujc73b71rfg-a |
+
+> El primer request tarda unos segundos si el plan free durmió el servicio.
+
 ### Opción A — Blueprint (automático, recomendado)
 
 1. Sube el proyecto a GitHub:
@@ -379,5 +390,5 @@ GET http://localhost:5000/api/pedidos/1
 - [ ] `Dockerfile` escrito y construido (`docker build -t api-edi .`).
 - [ ] Orquestación de app + BD con `docker-compose.yml`.
 - [ ] Despliegue local funcionando en `http://localhost:5000`.
-- [ ] Despliegue en Render funcionando en `https://<tu-app>.onrender.com`.
+- [x] Despliegue en Render funcionando en `https://api-edi-iqx3.onrender.com`.
 - [ ] Documentación completada (este README).
