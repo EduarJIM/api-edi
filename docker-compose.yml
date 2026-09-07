@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: api-edu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: edi_user
+      POSTGRES_PASSWORD: edi_pass
+      POSTGRES_DB: edi_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edi_user -d edi_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: api-edu-app
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://edi_user:edi_pass@postgres:5432/edi_db
+      SECRET_KEY: cambiar-esta-clave-en-produccion
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: api-edu-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
