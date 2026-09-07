@@ -1,0 +1,187 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "API EDI - Gestión de Tareas Studio",
+		"description": "Colección oficial de Postman para probar todos los endpoints REST de la API de Tareas EDI (PostgreSQL / SQLite).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Utilidad & Salud",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "health"]
+						},
+						"description": "Verifica que el servicio web y la base de datos estén respondiendo correctamente."
+					}
+				},
+				{
+					"name": "Información de la API",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api",
+							"host": ["{{base_url}}"],
+							"path": ["api"]
+						},
+						"description": "Devuelve la versión de la API y los endpoints disponibles."
+					}
+				}
+			]
+		},
+		{
+			"name": "Tareas (CRUD & Control de Estado)",
+			"item": [
+				{
+					"name": "Listar Tareas Registradas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/tareas",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas"]
+						},
+						"description": "Obtiene la lista completa de tareas en orden cronológico descendente."
+					}
+				},
+				{
+					"name": "Filtrar Tareas (Búsqueda por Código, Estado y Prioridad)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/tareas?q=EDI&estado=pendiente&prioridad=alta",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas"],
+							"query": [
+								{
+									"key": "q",
+									"value": "EDI",
+									"description": "Búsqueda por código o título"
+								},
+								{
+									"key": "estado",
+									"value": "pendiente",
+									"description": "pendiente | en_progreso | completado | suspendido"
+								},
+								{
+									"key": "prioridad",
+									"value": "alta",
+									"description": "baja | media | alta | critica"
+								}
+							]
+						},
+						"description": "Filtra tareas por palabra clave, estado o prioridad."
+					}
+				},
+				{
+					"name": "Obtener Tarea por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/tareas/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas", "1"]
+						},
+						"description": "Devuelve el objeto completo de una tarea dada su clave primaria."
+					}
+				},
+				{
+					"name": "Crear Nueva Tarea",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"codigo\": \"TAR-POSTMAN-01\",\n  \"titulo\": \"Prueba de Integración Postman\",\n  \"descripcion\": \"Tarea registrada desde Postman hacia la base de datos PostgreSQL / SQLite.\",\n  \"prioridad\": \"alta\",\n  \"estado\": \"pendiente\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tareas",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas"]
+						},
+						"description": "Registra una nueva tarea en la base de datos."
+					}
+				},
+				{
+					"name": "Actualizar Tarea",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titulo\": \"Título Actualizado desde Postman\",\n  \"prioridad\": \"critica\",\n  \"estado\": \"en_progreso\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tareas/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas", "1"]
+						},
+						"description": "Actualiza parcialmente los campos de una tarea existente."
+					}
+				},
+				{
+					"name": "Suspender / Reanudar Tarea",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/tareas/1/suspender",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas", "1", "suspender"]
+						},
+						"description": "Conmuta el estado de la tarea entre 'suspendido' y 'pendiente'."
+					}
+				},
+				{
+					"name": "Eliminar Tarea",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/tareas/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tareas", "1"]
+						},
+						"description": "Elimina permanentemente una tarea de la base de datos."
+					}
+				}
+			]
+		}
+	]
+}

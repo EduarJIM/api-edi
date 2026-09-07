@@ -1,7 +1,7 @@
 import decimal
 import os
 import click
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, request
 from flask.json.provider import DefaultJSONProvider
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -24,23 +24,29 @@ def create_app(config_name=None):
 
     from app.config import config_by_name
 
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_object(config_by_name[config_name])
     app.json = NumericJSONProvider(app)
 
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from app.routes.proveedores import proveedores_bp
-    from app.routes.productos import productos_bp
-    from app.routes.pedidos import pedidos_bp
+    from app.routes.tareas import tareas_bp
 
-    app.register_blueprint(proveedores_bp, url_prefix="/api")
-    app.register_blueprint(productos_bp, url_prefix="/api")
-    app.register_blueprint(pedidos_bp, url_prefix="/api")
+    app.register_blueprint(tareas_bp, url_prefix="/api")
 
     @app.route("/")
     def index():
+        if (
+            request.headers.get("Accept") == "application/json"
+            or request.args.get("format") == "json"
+        ):
+            return api_info()
+        return render_template("index.html")
+
+    @app.route("/api")
+    @app.route("/api/")
+    def api_info():
         return (
             jsonify(
                 {
@@ -50,17 +56,15 @@ def create_app(config_name=None):
                     "documentacion": "Ver README.md del proyecto",
                     "endpoints": {
                         "health": "/api/health",
-                        "proveedores": "/api/proveedores",
-                        "productos": "/api/productos",
-                        "pedidos": "/api/pedidos",
-                        "detalles_pedido": "/api/pedidos/<id>/detalles",
+                        "tareas": "/api/tareas",
                     },
                 }
             ),
             200,
         )
 
-    @app.route("/api/health")
+    @app.route("/health", methods=["GET", "POST"])
+    @app.route("/api/health", methods=["GET", "POST"])
     def health_check():
         return jsonify({"status": "healthy", "service": "api-edi"}), 200
 

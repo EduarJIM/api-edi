@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API EDI - Gestión de Tareas Studio</title>
+    <meta name="description" content="Consola inteligente para la gestión de tareas, control de estados (check, suspender, actualizar, eliminar) y monitoreo de despliegue en Render.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="background-glow"></div>
+    <div class="background-glow-secondary"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Task Studio <span class="badge-version">API EDI</span></h1>
+                    <p class="brand-subtitle">Gestión Automatizada de Tareas y Control de Estado</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="render-status-pill" id="renderHeaderPill" title="Estado de despliegue en Render">
+                    <span class="status-pulse pulse-green"></span>
+                    <span class="status-text" id="renderStatusText">Render: Verificando...</span>
+                </div>
+                
+                <button class="btn btn-primary btn-glow" id="btnOpenNewTaskModal">
+                    <i class="fa-solid fa-plus-circle"></i> Nueva Tarea
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- KPI Metrics Grid -->
+        <section class="kpi-grid">
+            <div class="kpi-card kpi-total">
+                <div class="kpi-icon"><i class="fa-solid fa-list-check"></i></div>
+                <div class="kpi-data">
+                    <span class="kpi-value" id="kpiTotalTasks">0</span>
+                    <span class="kpi-label">Tareas Registradas</span>
+                </div>
+                <div class="kpi-glow"></div>
+            </div>
+
+            <div class="kpi-card kpi-pending">
+                <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                <div class="kpi-data">
+                    <span class="kpi-value" id="kpiPendingTasks">0</span>
+                    <span class="kpi-label">Tareas Pendientes</span>
+                </div>
+                <div class="kpi-glow"></div>
+            </div>
+
+            <div class="kpi-card kpi-progress">
+                <div class="kpi-icon"><i class="fa-solid fa-spinner"></i></div>
+                <div class="kpi-data">
+                    <span class="kpi-value" id="kpiProgressTasks">0</span>
+                    <span class="kpi-label">En Progreso</span>
+                </div>
+                <div class="kpi-glow"></div>
+            </div>
+
+            <div class="kpi-card kpi-suspended">
+                <div class="kpi-icon"><i class="fa-solid fa-pause"></i></div>
+                <div class="kpi-data">
+                    <span class="kpi-value" id="kpiSuspendedTasks">0</span>
+                    <span class="kpi-label">Tareas Suspendidas</span>
+                </div>
+                <div class="kpi-glow"></div>
+            </div>
+
+            <div class="kpi-card kpi-completed">
+                <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="kpi-data">
+                    <span class="kpi-value" id="kpiCompletedTasks">0</span>
+                    <span class="kpi-label">Tareas Completadas</span>
+                </div>
+                <div class="kpi-glow"></div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="tab-tasks">
+                <i class="fa-solid fa-tasks"></i> Tablero de Tareas
+            </button>
+            <button class="tab-btn" data-tab="tab-render">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Despliegue Render
+            </button>
+            <button class="tab-btn" data-tab="tab-queries">
+                <i class="fa-solid fa-terminal"></i> Consola API REST
+            </button>
+        </nav>
+
+        <!-- Tab 1: Task Management Studio -->
+        <div class="tab-content active" id="tab-tasks">
+            <!-- Futurist Visual Search Bar Header -->
+            <div class="search-hero-panel glass-panel">
+                <div class="search-bar-wrapper">
+                    <div class="search-input-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon-glow"></i>
+                        <input type="text" id="taskSearchInput" placeholder="Buscar por código de tarea (ej: TAR-001, EDI-850) o palabras clave..." autocomplete="off">
+                        <span class="search-shortcut"><i class="fa-solid fa-command"></i> /</span>
+                    </div>
+                    
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label><i class="fa-solid fa-filter"></i> Estado:</label>
+                            <select id="taskStatusFilter" class="select-input select-glow">
+                                <option value="">Todos los Estados</option>
+                                <option value="pendiente">Pendientes ⏳</option>
+                                <option value="en_progreso">En Progreso ⚙️</option>
+                                <option value="suspendido">Suspendidas ⏸️</option>
+                                <option value="completado">Completadas ✅</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label><i class="fa-solid fa-layer-group"></i> Prioridad:</label>
+                            <select id="taskPriorityFilter" class="select-input select-glow">
+                                <option value="">Todas las Prioridades</option>
+                                <option value="baja">Baja 🟢</option>
+                                <option value="media">Media 🔵</option>
+                                <option value="alta">Alta 🟠</option>
+                                <option value="critica">Crítica 🔴</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-secondary" id="btnRefreshTasks" title="Actualizar Tareas">
+                            <i class="fa-solid fa-rotate-right"></i> Refrescar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task List Table / Grid -->
+            <div class="tasks-container margin-top-lg">
+                <div id="tasksLoading" class="loading-spinner">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Cargando tareas registradas...
+                </div>
+                <div id="tasksEmpty" class="empty-state hidden">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <h3>No hay tareas registradas que coincidan</h3>
+                    <p>Agrega una nueva tarea o modifica los filtros de búsqueda.</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('btnOpenNewTaskModal').click()">
+                        <i class="fa-solid fa-plus"></i> Crear Nueva Tarea
+                    </button>
+                </div>
+                <div id="tasksList" class="tasks-grid"></div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Render Deployment Monitor -->
+        <div class="tab-content" id="tab-render">
+            <div class="render-monitor-card glass-panel">
+                <div class="render-header">
+                    <div class="render-title-group">
+                        <span class="render-logo"><i class="fa-solid fa-cloud"></i> Render Cloud</span>
+                        <div>
+                            <h2>Estado del Despliegue en Vivo</h2>
+                            <p>Monitoreo continuo de salud y respuesta de la API</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline" id="btnPingHealth">
+                        <i class="fa-solid fa-heart-pulse"></i> Ejecutar Health Check
+                    </button>
+                </div>
+
+                <div class="render-details-grid">
+                    <div class="render-detail-box">
+                        <span class="detail-label"><i class="fa-solid fa-server"></i> Servicio</span>
+                        <span class="detail-value">api-edi (Web Service)</span>
+                    </div>
+                    <div class="render-detail-box">
+                        <span class="detail-label"><i class="fa-solid fa-microchip"></i> Engine</span>
+                        <span class="detail-value">Python / Flask</span>
+                    </div>
+                    <div class="render-detail-box">
+                        <span class="detail-label"><i class="fa-solid fa-database"></i> Base de Datos</span>
+                        <span class="detail-value">PostgreSQL / SQLite fallback</span>
+                    </div>
+                    <div class="render-detail-box">
+                        <span class="detail-label"><i class="fa-solid fa-wave-square"></i> Endpoint de Salud</span>
+                        <span class="detail-value"><code>/api/health</code></span>
+                    </div>
+                </div>
+
+                <div class="render-health-results" id="renderHealthCard">
+                    <div class="health-status-badge status-healthy">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span id="healthStatusMsg">Estado: Comprobando conexión...</span>
+                    </div>
+                    <pre class="json-code" id="healthResponseCode">Esperando respuesta del servidor...</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: API REST Console -->
+        <div class="tab-content" id="tab-queries">
+            <div class="query-console-card glass-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <h2>Consola de Consultas de la API</h2>
+                        <p>Prueba peticiones HTTP directamente contra el backend de tareas</p>
+                    </div>
+                </div>
+                <div class="query-bar">
+                    <select id="queryMethod" class="select-input select-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <input type="text" id="queryUrl" class="text-input" value="/api/tareas">
+                    <button class="btn btn-primary" id="btnExecuteQuery">
+                        <i class="fa-solid fa-play"></i> Enviar Petición
+                    </button>
+                </div>
+                <div class="query-body-section hidden" id="queryBodyContainer">
+                    <label class="input-label">Payload JSON (Petición):</label>
+                    <textarea id="queryRequestBody" rows="5" class="json-textarea" placeholder='{"codigo": "TAR-100", "titulo": "Nueva Tarea", "prioridad": "alta"}'></textarea>
+                </div>
+                <div class="query-result-section">
+                    <div class="result-header">
+                        <span>Respuesta HTTP: <strong id="queryStatusCode" class="badge-status">-</strong></span>
+                        <span id="queryResponseTime" class="latency-time">0 ms</span>
+                    </div>
+                    <pre id="queryResponseBody" class="json-code">// La respuesta JSON aparecerá aquí...</pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Crear Tarea -->
+    <div class="modal-overlay hidden" id="modalNewTask">
+        <div class="modal-container glass-panel">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-plus-circle"></i> Agregar Nueva Tarea</h3>
+                <button class="modal-close" id="btnCloseTaskModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formNewTask" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Código de Tarea *</label>
+                        <input type="text" id="taskNumberEdi" class="text-input" placeholder="Ej: TAR-001, EDI-850" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad *</label>
+                        <select id="taskPrioridad" class="select-input" required>
+                            <option value="baja">Baja 🟢</option>
+                            <option value="media" selected>Media 🔵</option>
+                            <option value="alta">Alta 🟠</option>
+                            <option value="critica">Crítica 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Título de la Tarea *</label>
+                    <input type="text" id="taskTitulo" class="text-input" placeholder="Ej: Actualizar servidor de mensajería" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado Inicial *</label>
+                    <select id="taskEstado" class="select-input" required>
+                        <option value="pendiente" selected>Pendiente ⏳</option>
+                        <option value="en_progreso">En Progreso ⚙️</option>
+                        <option value="suspendido">Suspendida ⏸️</option>
+                        <option value="completado">Completada ✅</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción / Detalles de la Tarea</label>
+                    <textarea id="taskObservaciones" class="text-input" rows="3" placeholder="Instrucciones o notas adicionadas a la tarea..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelTaskModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Guardar Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Tarea -->
+    <div class="modal-overlay hidden" id="modalEditTask">
+        <div class="modal-container glass-panel">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square"></i> Actualizar Tarea</h3>
+                <button class="modal-close" id="btnCloseEditTaskModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formEditTask" class="modal-body">
+                <input type="hidden" id="editTaskId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Código de Tarea *</label>
+                        <input type="text" id="editTaskNumberEdi" class="text-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad *</label>
+                        <select id="editTaskPrioridad" class="select-input" required>
+                            <option value="baja">Baja 🟢</option>
+                            <option value="media">Media 🔵</option>
+                            <option value="alta">Alta 🟠</option>
+                            <option value="critica">Crítica 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Título de la Tarea *</label>
+                    <input type="text" id="editTaskTitulo" class="text-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado de la Tarea *</label>
+                    <select id="editTaskEstado" class="select-input" required>
+                        <option value="pendiente">Pendiente ⏳</option>
+                        <option value="en_progreso">En Progreso ⚙️</option>
+                        <option value="suspendido">Suspendida ⏸️</option>
+                        <option value="completado">Completada ✅</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción / Detalles</label>
+                    <textarea id="editTaskObservaciones" class="text-input" rows="3"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelEditTaskModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- JS Client App -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

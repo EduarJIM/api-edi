@@ -6,133 +6,88 @@ def test_health_check(client):
     assert data["service"] == "api-edi"
 
 
-def test_listar_proveedores_vacio(client):
-    response = client.get("/api/proveedores")
-    assert response.status_code == 200
-    assert response.get_json() == []
-
-
-def test_crear_proveedor(client, proveedor_payload):
-    response = client.post("/api/proveedores", json=proveedor_payload)
+def test_paso2_crear_nueva_tarea_201(client):
+    payload = {
+        "title": "Aprender Postman y Docker",
+        "description": "Prueba de creación de tarea para la evidencia",
+        "completed": False,
+    }
+    response = client.post("/api/tasks", json=payload)
     assert response.status_code == 201
     data = response.get_json()
-    assert data["nombre"] == "Proveedor Test"
-    assert data["email"] == "juan@proveedor.com"
+    assert data["title"] == "Aprender Postman y Docker"
+    assert data["description"] == "Prueba de creación de tarea para la evidencia"
+    assert data["completed"] is False
     assert data["id"] is not None
 
 
-def test_crear_proveedor_email_duplicado(client, proveedor_payload):
-    client.post("/api/proveedores", json=proveedor_payload)
-    response = client.post("/api/proveedores", json=proveedor_payload)
-    assert response.status_code == 409
+def test_paso3_listar_todas_las_tareas_200(client):
+    client.post("/api/tasks", json={"title": "Tarea 1", "completed": False})
+    response = client.get("/api/tasks")
+    assert response.status_code == 200
+    tareas = response.get_json()
+    assert isinstance(tareas, list)
+    assert len(tareas) >= 1
 
 
-def test_crear_proveedor_email_invalido(client, proveedor_payload):
-    proveedor_payload["email"] = "correo-invalido"
-    response = client.post("/api/proveedores", json=proveedor_payload)
-    assert response.status_code == 400
-    assert "error" in response.get_json()
-
-
-def test_obtener_proveedor(client, proveedor_payload):
-    creado = client.post("/api/proveedores", json=proveedor_payload).get_json()
-    response = client.get(f"/api/proveedores/{creado['id']}")
+def test_paso4_consultar_tarea_por_id_200(client):
+    creado = client.post(
+        "/api/tasks", json={"title": "Tarea Consulta", "description": "Detalle"}
+    ).get_json()
+    response = client.get(f"/api/tasks/{creado['id']}")
     assert response.status_code == 200
     assert response.get_json()["id"] == creado["id"]
+    assert response.get_json()["title"] == "Tarea Consulta"
 
 
-def test_obtener_proveedor_no_existe(client):
-    response = client.get("/api/proveedores/9999")
-    assert response.status_code == 404
-
-
-def test_actualizar_proveedor(client, proveedor_payload):
-    creado = client.post("/api/proveedores", json=proveedor_payload).get_json()
-    response = client.put(
-        f"/api/proveedores/{creado['id']}", json={"contacto": "Nuevo Contacto"}
-    )
+def test_paso5_actualizar_estado_patch_200(client):
+    creado = client.post(
+        "/api/tasks", json={"title": "Tarea a Completar", "completed": False}
+    ).get_json()
+    
+    # PATCH completed: true
+    response = client.patch(f"/api/tasks/{creado['id']}", json={"completed": True})
     assert response.status_code == 200
-    assert response.get_json()["contacto"] == "Nuevo Contacto"
+    data = response.get_json()
+    assert data["completed"] is True
+    assert data["estado"] == "completado"
 
 
-def test_eliminar_proveedor(client, proveedor_payload):
-    creado = client.post("/api/proveedores", json=proveedor_payload).get_json()
-    response = client.delete(f"/api/proveedores/{creado['id']}")
-    assert response.status_code == 200
-    eliminado = client.get(f"/api/proveedores/{creado['id']}")
-    assert eliminado.status_code == 404
-
-
-def test_crear_producto_requiere_proveedor_valido(client, proveedor_payload):
-    response = client.post(
-        "/api/productos",
-        json={
-            "nombre": "Martillo",
-            "precio": 9.99,
-            "proveedor_id": 999,
-        },
-    )
-    assert response.status_code == 400
-
-
-def test_flujo_completo_pedido(client, proveedor_payload):
-    proveedor = client.post("/api/proveedores", json=proveedor_payload).get_json()
-
-    producto = client.post(
-        "/api/productos",
-        json={
-            "nombre": "Martillo",
-            "descripcion": "Martillo de acero",
-            "precio": 9.99,
-            "stock": 50,
-            "categoria": "Herramientas",
-            "proveedor_id": proveedor["id"],
-        },
+def test_paso6_modificar_tarea_put_200(client):
+    creado = client.post(
+        "/api/tasks", json={"title": "Tarea Inicial", "completed": False}
     ).get_json()
-    assert producto["precio"] == 9.99
-
-    pedido = client.post(
-        "/api/pedidos",
-        json={
-            "numero_edi": "ORD-001",
-            "estado": "pendiente",
-            "observaciones": "Pedido de prueba",
-            "proveedor_id": proveedor["id"],
-            "detalles": [
-                {"producto_id": producto["id"], "cantidad": 3, "precio_unitario": 9.99}
-            ],
-        },
-    ).get_json()
-    assert pedido["numero_edi"] == "ORD-001"
-    assert pedido["total"] == 29.97
-    assert len(pedido["detalles"]) == 1
-
-    detalle = client.get(f"/api/pedidos/{pedido['id']}/detalles").get_json()
-    assert detalle[0]["subtotal"] == 29.97
-
-    stock = client.get(f"/api/productos/{producto['id']}").get_json()
-    assert stock["stock"] == 47
-
-
-def test_pedido_con_numero_edi_duplicado(client, proveedor_payload):
-    proveedor = client.post("/api/proveedores", json=proveedor_payload).get_json()
-    producto = client.post(
-        "/api/productos",
-        json={
-            "nombre": "Tornillos",
-            "precio": 1.50,
-            "stock": 100,
-            "proveedor_id": proveedor["id"],
-        },
-    ).get_json()
-
+    
     payload = {
-        "numero_edi": "ORD-002",
-        "proveedor_id": proveedor["id"],
-        "detalles": [
-            {"producto_id": producto["id"], "cantidad": 5, "precio_unitario": 1.50}
-        ],
+        "title": "Tarea 100% Finalizada y Documentada",
+        "description": "Desplegada en Render con PostgreSQL administrado",
+        "completed": True,
     }
-    assert client.post("/api/pedidos", json=payload).status_code == 201
-    response = client.post("/api/pedidos", json=payload)
-    assert response.status_code == 409
+    response = client.put(f"/api/tasks/{creado['id']}", json=payload)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["title"] == "Tarea 100% Finalizada y Documentada"
+    assert data["description"] == "Desplegada en Render con PostgreSQL administrado"
+    assert data["completed"] is True
+
+
+def test_paso7_filtrar_tareas_completadas_query_param_200(client):
+    client.post("/api/tasks", json={"title": "Tarea Incompleta", "completed": False})
+    client.post("/api/tasks", json={"title": "Tarea Lista", "completed": True})
+
+    response = client.get("/api/tasks?completed=true")
+    assert response.status_code == 200
+    tareas = response.get_json()
+    assert all(t["completed"] is True for t in tareas)
+
+
+def test_paso8_eliminar_tarea_delete_200(client):
+    creado = client.post(
+        "/api/tasks", json={"title": "Tarea a Eliminar", "completed": False}
+    ).get_json()
+    
+    response = client.delete(f"/api/tasks/{creado['id']}")
+    assert response.status_code == 200
+    
+    # Confirmar 404
+    assert client.get(f"/api/tasks/{creado['id']}").status_code == 404

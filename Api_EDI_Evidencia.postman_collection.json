@@ -1,0 +1,157 @@
+{
+	"info": {
+		"_postman_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+		"name": "API EDI - Evidencia Postman Tasks (Render)",
+		"description": "Colección de Postman configurada para el servidor en Render (https://api-edi-iqx3.onrender.com) con los 8 pasos de la evidencia de tareas.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://api-edi-iqx3.onrender.com",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Health Check API (GET)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/health",
+					"host": ["{{base_url}}"],
+					"path": ["api", "health"]
+				},
+				"description": "Verifica que el servicio en Render esté activo (Respuesta: 200 OK)."
+			}
+		},
+		{
+			"name": "2. Crear una nueva tarea (POST - 201 Created)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Aprender Postman y Docker\",\n  \"description\": \"Prueba de creación de tarea para la evidencia\",\n  \"completed\": false\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tasks",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks"]
+				},
+				"description": "Crea una nueva tarea en Render y retorna código 201 Created con el ID generado."
+			}
+		},
+		{
+			"name": "3. Listar todas las tareas (GET - 200 OK)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/tasks",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks"]
+				},
+				"description": "Obtiene la lista completa de tareas desde el backend en Render (200 OK)."
+			}
+		},
+		{
+			"name": "4. Consultar una sola tarea por su ID (GET - 200 OK)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/tasks/1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks", "1"]
+				},
+				"description": "Consulta el detalle de la tarea por su ID en Render (200 OK)."
+			}
+		},
+		{
+			"name": "5. Actualizar estado a completada (PATCH - 200 OK)",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"completed\": true\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tasks/1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks", "1"]
+				},
+				"description": "Actualiza el estado de la tarea a completada usando PATCH en Render (200 OK)."
+			}
+		},
+		{
+			"name": "6. Modificar una tarea por completo (PUT - 200 OK)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Tarea 100% Finalizada y Documentada\",\n  \"description\": \"Desplegada en Render con PostgreSQL administrado\",\n  \"completed\": true\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tasks/1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks", "1"]
+				},
+				"description": "Modifica por completo el título y descripción usando PUT en Render (200 OK)."
+			}
+		},
+		{
+			"name": "7. Filtrar tareas completadas (GET Query Params - 200 OK)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/tasks?completed=true",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks"],
+					"query": [
+						{
+							"key": "completed",
+							"value": "true"
+						}
+					]
+				},
+				"description": "Filtra tareas completadas en Render usando Query Params (200 OK)."
+			}
+		},
+		{
+			"name": "8. Eliminar una tarea (DELETE - 200 OK)",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/tasks/1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "tasks", "1"]
+				},
+				"description": "Elimina la tarea especificada por ID en Render (200 OK)."
+			}
+		}
+	]
+}
