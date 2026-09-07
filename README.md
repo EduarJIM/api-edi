@@ -110,6 +110,7 @@ Al crear un pedido, el stock de cada producto se descuenta automáticamente; nun
 ### Utilidad
 | Método | Ruta | Descripción |
 |--------|------|-------------|
+| GET | `/` | Info de la API (vista rápida en el navegador) |
 | GET | `/api/health` | Health check |
 
 ### Notas sobre formato de salida
@@ -143,7 +144,7 @@ docker compose version
 ### 6.1 Con Docker Compose (recomendado)
 
 ```bash
-# Levantar app + base de datos
+# Levantar app + base de datos + Adminer
 docker compose up --build -d
 
 # Ver logs
@@ -154,6 +155,11 @@ curl http://localhost:5000/api/health
 ```
 
 La API queda disponible en: **http://localhost:5000**
+
+**Ver la base de datos (Adminer):** abre **http://localhost:8081** y usa:
+- Sistema: **PostgreSQL**
+- Servidor: `postgres` (nombre del *service* en la red Docker)
+- Usuario: `edi_user` · Contraseña: `edi_pass` · Base de datos: `edi_db`
 
 Para detener:
 ```bash
@@ -206,8 +212,8 @@ USER appuser
 EXPOSE 5000
 # Healthcheck para que Docker/Render detecten caídas
 HEALTHCHECK ... CMD python -c "urllib.request.urlopen('http://127.0.0.1:5000/api/health')"
-# Crea las tablas y arranca Gunicorn (servidor de producción)
-CMD ["sh", "-c", "flask --app run:app init-db && gunicorn --bind 0.0.0.0:5000 --workers 2 run:app"]
+# Crea las tablas y arranca Gunicorn (usa $PORT en Render, 5000 en local)
+CMD ["sh", "-c", "flask --app run:app init-db && gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 run:app"]
 ```
 
 Orden de capas pensado para **maximizar la caché de capas** (dependencias antes que el código).
@@ -231,12 +237,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy   # arranque ordenado
+  adminer:
+    image: adminer:4.8.1
+    ports: ["8081:8080"]        # interfaz web para ver la BD
+    depends_on: [postgres]
 volumes:
   postgres_data:
 ```
 
 - La app se conecta a `postgres` usando el nombre del *service* como host → `DATABASE_URL=postgresql://edi_user:edi_pass@postgres:5432/edi_db`.
 - El `healthcheck` de la BD garantiza que la app no intente conectar antes de tiempo.
+- **Adminer** (`http://localhost:8081`) permite consultar y editar la base de datos desde el navegador.
 
 ---
 
@@ -343,6 +354,7 @@ GET http://localhost:5000/api/pedidos/1
 | `docker compose down` | Detiene y borra contenedores |
 | `docker compose down -v` | Igual + borra el volumen de datos |
 | `docker compose restart app` | Reinicia solo la app |
+| `docker compose logs -f adminer` | Logs de Adminer |
 | `docker exec -it api-edu-app bash` | Terminal dentro del contenedor app |
 | `docker exec -it api-edu-postgres psql -U edi_user -d edi_db` | Consola SQL dentro de la BD |
 
